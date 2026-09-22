@@ -27,7 +27,12 @@ java {
 tasks.withType<JavaCompile>().configureEach {
     options.release = 17
     options.encoding = "UTF-8"
-    options.compilerArgs.addAll(listOf("-Xlint:all,-this-escape,-serial", "-parameters"))
+    // -this-escape only exists from JDK 21 onwards, and javac rejects an unknown lint key outright.
+    val lint = mutableListOf("all", "-serial")
+    if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+        lint += "-this-escape"
+    }
+    options.compilerArgs.addAll(listOf("-Xlint:" + lint.joinToString(","), "-parameters"))
 }
 
 application {
