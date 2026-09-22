@@ -1,0 +1,29 @@
+# Build output. Anchored to the repository root so that a Java package named
+# "build", "bin", "out" or "target" is never ignored by accident.
+/build/
+/out/
+/bin/
+/.gradle/
+*.class
+
+# Jars, except the Gradle wrapper, which belongs in the repository
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# Local agent state
+.claude/
+
+# Reports produced by the tool itself
+jvm-report*.txt
+jvm-report*.json
+jvm-report*.md
