@@ -8,7 +8,8 @@ Report **every detail a JVM will tell you about itself** - its own, another one 
 machine, or one across a JMX connection - as readable text, JSON or Markdown.
 
 It is a single jar with **no runtime dependencies**, so dropping it onto a class path or into a
-container cannot disturb what you are inspecting.
+container cannot disturb what you are inspecting. `--serve` turns the same jar into a browser
+interface with a live dashboard.
 
 ```console
 $ java -jar jvm-inspector.jar --only overview
@@ -103,6 +104,33 @@ java -jar jvm-inspector.jar --jmx app-host:9010 --jmx-user ops --jmx-password-fi
 
 The password is read from a file or from `JVM_INSPECTOR_JMX_PASSWORD`, or prompted for - never from
 the command line, so it stays out of shell history and process listings.
+
+### Browse it
+
+```bash
+java -jar jvm-inspector.jar --serve          # http://127.0.0.1:7777/
+java -jar jvm-inspector.jar --pid 34295 --serve 8080 --open
+```
+
+The page is served by the jar itself - one HTML file, no CDN, nothing fetched from the network - so
+it works on a machine with no internet access and inside a container with a forwarded port.
+
+- A **live dashboard** polled every two seconds: heap, non-heap, threads, classes, GC, process CPU,
+  uptime, a bar per memory pool, and a sparkline per counter for as long as the page stays open.
+- **Every section** on its own page, with sortable tables and a filter box that hides
+  non-matching rows across the whole section - the fastest way through 900 VM flags.
+- **Depth controls in the header** (`detail`, `redact`, stack depth, `expensive`) that re-collect on
+  change, and a download menu for the text, JSON or Markdown report.
+- Light and dark, and it works at phone width.
+
+The JSON behind it is a plain API if you want to script against it: `/api/live`, `/api/sections`,
+`/api/section?id=memory`, `/api/report`, `/api/download?format=markdown`.
+
+**On exposing it.** The server binds to `127.0.0.1` and sends no CORS headers, so another origin
+cannot read its answers, and it rejects any request whose `Host` header is not a loopback name,
+which is what stops DNS rebinding from turning the port into a public one. There is no
+authentication, so `--host 0.0.0.0` hands the target's system properties, command line and stack
+traces to anything that can reach the port; prefer an SSH tunnel.
 
 ### Watch a JVM instead of photographing it
 
@@ -206,6 +234,10 @@ JMX authentication
       --jmx-password-file <f>  file holding the password
 
 Live view
+      --serve [port]           serve the browser interface (default port 7777)
+      --port <n>               port for --serve, when not given after it
+      --host <address>         interface for --serve (default 127.0.0.1)
+      --open                   open the interface in a browser
       --watch <seconds>        print a compact sample line on an interval
       --samples <n>            stop after n samples
 
@@ -216,7 +248,8 @@ Other
 ## How it works
 
 Every section is an `Inspector` that fills a tree of sections, properties, tables, notes and code
-blocks; the renderers turn that one tree into text, JSON or Markdown. Inspectors read the target
+blocks; the renderers turn that one tree into text, JSON or Markdown, and the browser interface
+walks the JSON form of the same tree. Inspectors read the target
 through a `Target` abstraction that is always an `MBeanServerConnection`, which is why the same code
 serves this JVM, an attached one and a remote one. Facts that no management bean exposes come from
 the HotSpot diagnostic commands - the set `jcmd` drives - invoked through the

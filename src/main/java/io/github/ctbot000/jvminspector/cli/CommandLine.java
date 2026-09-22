@@ -39,6 +39,11 @@ public final class CommandLine {
     private int watchSeconds;
     private int samples;
 
+    private boolean serve;
+    private int port = io.github.ctbot000.jvminspector.web.WebServer.DEFAULT_PORT;
+    private String host = io.github.ctbot000.jvminspector.web.WebServer.DEFAULT_HOST;
+    private boolean openBrowser;
+
     private boolean help;
     private boolean version;
     private boolean listJvms;
@@ -57,6 +62,16 @@ public final class CommandLine {
                 case "--list-jvms", "--list-vms" -> line.listJvms = true;
                 case "--list-sections" -> line.listSections = true;
                 case "--expensive" -> line.expensive = true;
+                case "--open" -> line.openBrowser = true;
+                case "--serve" -> {
+                    line.serve = true;
+                    // "--serve 8080" reads naturally, so a bare number after the flag is its port.
+                    if (index + 1 < arguments.length && arguments[index + 1].matches("\\d{1,5}")) {
+                        line.port = (int) parseLong(argument, arguments[++index]);
+                    }
+                }
+                case "--port" -> line.port = (int) parseLong(argument, next(arguments, ++index));
+                case "--host" -> line.host = next(arguments, ++index);
                 case "--load-agent" -> line.loadAgent = true;
                 case "--pid", "-p" -> {
                     line.targetKind = TargetKind.PID;
@@ -109,6 +124,16 @@ public final class CommandLine {
         }
         if (jmxUser != null && targetKind != TargetKind.JMX) {
             throw new CommandLineException("--jmx-user only applies to --jmx");
+        }
+        if (serve && watchSeconds > 0) {
+            throw new CommandLineException("--serve and --watch are two different ways to watch one JVM;"
+                    + " pick one");
+        }
+        if (port < 0 || port > 65535) {
+            throw new CommandLineException("--port must be between 0 and 65535");
+        }
+        if (openBrowser && !serve) {
+            throw new CommandLineException("--open only applies to --serve");
         }
     }
 
@@ -175,6 +200,22 @@ public final class CommandLine {
         return Set.copyOf(skip);
     }
 
+    public boolean serving() {
+        return serve;
+    }
+
+    public int port() {
+        return port;
+    }
+
+    public String host() {
+        return host;
+    }
+
+    public boolean openBrowser() {
+        return openBrowser;
+    }
+
     public boolean watching() {
         return watchSeconds > 0;
     }
@@ -238,6 +279,12 @@ public final class CommandLine {
                                                JVM_INSPECTOR_JMX_PASSWORD is read when it is absent
 
                 Live view
+                      --serve [port]           serve a browser interface (default port 7777) with a
+                                               live dashboard, every section, and downloads
+                      --port <n>               port for --serve, when not given after it
+                      --host <address>         interface for --serve (default 127.0.0.1; any other
+                                               value exposes the target's internals to the network)
+                      --open                   open the interface in a browser once it is serving
                       --watch <seconds>        print a compact sample line on an interval instead
                                                of a full report
                       --samples <n>            stop after n samples (default: until interrupted)

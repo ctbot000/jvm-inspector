@@ -11,7 +11,7 @@ import java.util.Map;
  * <p>The tool ships with no dependencies, so proving that its JSON output is well formed needs a
  * parser of its own rather than a library.
  */
-final class TestJson {
+public final class TestJson {
 
     private final String text;
     private int position;
@@ -21,7 +21,7 @@ final class TestJson {
     }
 
     /** Parses a document, throwing {@link IllegalArgumentException} on anything malformed. */
-    static Object parse(String text) {
+    public static Object parse(String text) {
         TestJson parser = new TestJson(text);
         parser.skipWhitespace();
         Object value = parser.readValue();

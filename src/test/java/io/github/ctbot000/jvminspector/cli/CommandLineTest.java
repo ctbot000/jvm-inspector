@@ -68,6 +68,26 @@ class CommandLineTest {
     }
 
     @Test
+    void serveTakesItsPortInlineOrSeparately() {
+        CommandLine bare = CommandLine.parse(new String[]{"--serve"});
+        assertTrue(bare.serving());
+        assertEquals(7777, bare.port());
+        assertEquals("127.0.0.1", bare.host());
+
+        assertEquals(8080, CommandLine.parse(new String[]{"--serve", "8080"}).port());
+        assertEquals(9000, CommandLine.parse(new String[]{"--serve", "--port", "9000"}).port());
+        assertEquals("0.0.0.0", CommandLine.parse(new String[]{"--serve", "--host", "0.0.0.0"}).host());
+        assertTrue(CommandLine.parse(new String[]{"--serve", "--open"}).openBrowser());
+    }
+
+    @Test
+    void serveDoesNotSwallowAFollowingOption() {
+        CommandLine command = CommandLine.parse(new String[]{"--serve", "--detail", "full"});
+        assertEquals(7777, command.port());
+        assertEquals(Detail.FULL, command.inspectionOptions().detail());
+    }
+
+    @Test
     void badInputIsRejectedWithAnExplanation() {
         assertMessage("--nope", "unknown option");
         assertMessage(new String[]{"--only", "nonsense"}, "unknown section");
@@ -77,6 +97,9 @@ class CommandLineTest {
         assertMessage(new String[]{"--jmx-user", "ops"}, "--jmx-user only applies to --jmx");
         assertMessage(new String[]{"--pid", "abc"}, "needs a number");
         assertMessage(new String[]{"--pid"}, "needs a value");
+        assertMessage(new String[]{"--serve", "--watch", "2"}, "pick one");
+        assertMessage(new String[]{"--serve", "--port", "70000"}, "between 0 and 65535");
+        assertMessage(new String[]{"--open"}, "--open only applies to --serve");
         assertThrows(IllegalArgumentException.class, () -> CommandLine.parse(new String[]{"-f", "yaml"}));
     }
 

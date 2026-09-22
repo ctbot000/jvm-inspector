@@ -8,6 +8,7 @@ import io.github.ctbot000.jvminspector.model.Report;
 import io.github.ctbot000.jvminspector.model.Section;
 import io.github.ctbot000.jvminspector.model.Table;
 import io.github.ctbot000.jvminspector.model.Value;
+import io.github.ctbot000.jvminspector.util.Json;
 
 import java.io.IOException;
 import java.util.List;

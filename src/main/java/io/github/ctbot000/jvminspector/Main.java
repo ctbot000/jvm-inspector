@@ -10,13 +10,16 @@ import io.github.ctbot000.jvminspector.target.AttachTarget;
 import io.github.ctbot000.jvminspector.target.JmxTarget;
 import io.github.ctbot000.jvminspector.target.LocalTarget;
 import io.github.ctbot000.jvminspector.target.Target;
+import io.github.ctbot000.jvminspector.web.WebServer;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.net.InetAddress;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
 
 /** The command line entry point. */
 public final class Main {
@@ -65,6 +68,10 @@ public final class Main {
             if (command.loadAgent() && target instanceof AttachTarget attached) {
                 loadAgent(attached, errors);
             }
+            if (command.serving()) {
+                serve(command, target, output, errors);
+                return 0;
+            }
             if (command.watching()) {
                 new Watcher(target, output).watch(command.watchSeconds(), command.samples());
                 return 0;
@@ -83,6 +90,41 @@ public final class Main {
             errors.println("jvm-inspector: " + failure);
             return FAILURE;
         }
+    }
+
+    /** Serves the browser interface until the process is interrupted. */
+    private static void serve(CommandLine command, Target target, PrintStream output, PrintStream errors)
+            throws IOException, InterruptedException {
+        try (WebServer server = WebServer.start(target, command.inspectionOptions(), command.host(),
+                command.port())) {
+            output.println("jvm-inspector " + JvmInspector.version() + " is serving "
+                    + target.description() + " at " + server.url());
+            if (!InetAddress.getByName(command.host()).isLoopbackAddress()) {
+                errors.println("warning: this interface is bound to " + command.host()
+                        + ", so anything that can reach it can read the target's system properties,"
+                        + " command line and stack traces. It has no authentication.");
+            }
+            output.println("Press Ctrl-C to stop.");
+            if (command.openBrowser()) {
+                openBrowser(server.url(), errors);
+            }
+            CountDownLatch stopped = new CountDownLatch(1);
+            Runtime.getRuntime().addShutdownHook(new Thread(stopped::countDown, "jvm-inspector-stop"));
+            stopped.await();
+        }
+    }
+
+    private static void openBrowser(String url, PrintStream errors) {
+        try {
+            java.awt.Desktop desktop = java.awt.Desktop.isDesktopSupported() ? java.awt.Desktop.getDesktop() : null;
+            if (desktop != null && desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
+                desktop.browse(java.net.URI.create(url));
+                return;
+            }
+        } catch (Exception ignored) {
+            // Fall through: printing the address is all a headless machine can offer.
+        }
+        errors.println("note: no browser could be opened here; visit " + url + " yourself.");
     }
 
     private static Target open(CommandLine command) throws IOException {

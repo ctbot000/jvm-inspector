@@ -1,12 +1,12 @@
-package io.github.ctbot000.jvminspector.render;
+package io.github.ctbot000.jvminspector.util;
 
 /** The small amount of JSON writing this tool needs, so that it can ship with no dependencies. */
-final class Json {
+public final class Json {
 
     private Json() {
     }
 
-    static String quote(String text) {
+    public static String quote(String text) {
         StringBuilder json = new StringBuilder(text.length() + 2);
         json.append('"');
         for (int index = 0; index < text.length(); index++) {
@@ -32,7 +32,7 @@ final class Json {
     }
 
     /** Renders a raw value as a JSON scalar, array, or quoted string. */
-    static String scalar(Object raw) {
+    public static String scalar(Object raw) {
         if (raw == null) {
             return "null";
         }
