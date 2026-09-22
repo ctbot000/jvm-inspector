@@ -1,5 +1,9 @@
 # jvm-inspector
 
+[![build](https://github.com/ctbot000/jvm-inspector/actions/workflows/build.yml/badge.svg)](https://github.com/ctbot000/jvm-inspector/actions/workflows/build.yml)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-17%2B-orange.svg)](https://adoptium.net)
+
 Report **every detail a JVM will tell you about itself** - its own, another one on the same
 machine, or one across a JMX connection - as readable text, JSON or Markdown.
 
